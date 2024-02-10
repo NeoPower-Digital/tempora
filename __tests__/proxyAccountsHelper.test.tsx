@@ -4,7 +4,7 @@ import { XCM_LOCATION } from '@/lib/constants/xcm.const';
 import {
   createProxyAccount,
   getCrossChainTransferParameters,
-  getDerivativeAccountV3,
+  getDerivativeAccount,
   validateProxyAccount,
 } from '@/lib/helpers/proxyAccounts.helper';
 import { ApiPromise } from '@polkadot/api';
@@ -76,17 +76,18 @@ describe('proxyAccountsHelper', () => {
     expect(mockSignAndSendPromise).toHaveBeenCalledWith({}, mockAccount);
   });
 
-  it('should getDerivativeAccountV3 and be deterministic, when called with a known account', () => {
+  it('should getDerivativeAccount and be deterministic, when called with a known account', () => {
     // Arrange
     const mockChain: AugmentedChain = {
       ...Astar,
       prefix: 1,
       relayChain: RelayChain.Kusama,
+      decimals: 1,
       xcmConfiguration: {} as XcmConfiguration,
     };
 
     // Act
-    const result = getDerivativeAccountV3(
+    const result = getDerivativeAccount(
       mockAccount,
       mockChain.paraId!,
       mockChain.prefix
@@ -103,12 +104,12 @@ describe('proxyAccountsHelper', () => {
         V3: XCM_LOCATION.CONCRETE_FUNGIBLE_ASSET(XCM_LOCATION.HERE(), 1),
       },
       {
-        V3: XCM_LOCATION.ACCOUNT_X2(1, '0x8000'),
+        V3: XCM_LOCATION.ACCOUNT_X2(1, {} as Uint8Array),
       },
     ];
 
     // Act
-    const result = getCrossChainTransferParameters(1, '0x8000', 1);
+    const result = getCrossChainTransferParameters(1, {} as Uint8Array, 1);
 
     // Assert
     expect(result).toEqual(expected);

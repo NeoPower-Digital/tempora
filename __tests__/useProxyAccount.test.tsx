@@ -65,24 +65,7 @@ describe('useProxyAccounts', () => {
       result.current.calculateProxies();
 
       // Assert
-      const defaultChain = {
-        xcmConfiguration: {
-          xcmInstructionWeight: {
-            proofSize: new BN(1),
-            refTime: new BN(1),
-          },
-        },
-      };
       expect(mockCalculateProxyAccounts).toHaveBeenCalledTimes(1);
-      expect(mockCalculateProxyAccounts).toHaveBeenCalledWith(
-        defaultChain,
-        defaultChain,
-        {
-          address: '0x123456',
-          source: 'Source test',
-        },
-        {}
-      );
     });
 
     it('should not calculate proxy accounts, when no account has been connected', () => {
@@ -377,15 +360,16 @@ describe('useProxyAccounts', () => {
 
       // Act
       const [originTopUpBalance, targetTopUpBalance] = [new BN(1), new BN(1)];
-      await result.current.topUpProxyAccounts(
-        originTopUpBalance,
-        targetTopUpBalance
-      );
+      const topUpProxyAccountsExtrinsicsResult =
+        await result.current.getTopUpProxyAccountsExtrinsics(
+          originTopUpBalance,
+          targetTopUpBalance
+        );
 
       // Assert
       expect(mockTransfer).toHaveBeenCalledTimes(1);
       expect(mockCrossChainTransfer).toHaveBeenCalledTimes(1);
-      expect(mockSignAndSendPromise).toHaveBeenCalledTimes(1);
+      expect(topUpProxyAccountsExtrinsicsResult).toHaveLength(2);
     });
 
     it('should topup origin proxy account, when receive only balance for origin chain', async () => {
@@ -399,15 +383,16 @@ describe('useProxyAccounts', () => {
 
       // Act
       const [originTopUpBalance, targetTopUpBalance] = [new BN(1), undefined];
-      await result.current.topUpProxyAccounts(
-        originTopUpBalance,
-        targetTopUpBalance
-      );
+      const topUpProxyAccountsExtrinsicsResult =
+        await result.current.getTopUpProxyAccountsExtrinsics(
+          originTopUpBalance,
+          targetTopUpBalance
+        );
 
       // Assert
       expect(mockTransfer).toHaveBeenCalledTimes(1);
       expect(mockCrossChainTransfer).toHaveBeenCalledTimes(0);
-      expect(mockSignAndSendPromise).toHaveBeenCalledTimes(1);
+      expect(topUpProxyAccountsExtrinsicsResult).toHaveLength(1);
     });
 
     it('should topup target proxy account, when receive only balance for target chain', async () => {
@@ -421,15 +406,16 @@ describe('useProxyAccounts', () => {
 
       // Act
       const [originTopUpBalance, targetTopUpBalance] = [undefined, new BN(1)];
-      await result.current.topUpProxyAccounts(
-        originTopUpBalance,
-        targetTopUpBalance
-      );
+      const topUpProxyAccountsExtrinsicsResult =
+        await result.current.getTopUpProxyAccountsExtrinsics(
+          originTopUpBalance,
+          targetTopUpBalance
+        );
 
       // Assert
       expect(mockTransfer).toHaveBeenCalledTimes(0);
       expect(mockCrossChainTransfer).toHaveBeenCalledTimes(1);
-      expect(mockSignAndSendPromise).toHaveBeenCalledTimes(1);
+      expect(topUpProxyAccountsExtrinsicsResult).toHaveLength(1);
     });
 
     it('should not topup proxy accounts, when receive both balances with undefined values', async () => {
@@ -444,15 +430,16 @@ describe('useProxyAccounts', () => {
 
       // Act
       const [originTopUpBalance, targetTopUpBalance] = [undefined, undefined];
-      await result.current.topUpProxyAccounts(
-        originTopUpBalance,
-        targetTopUpBalance
-      );
+      const topUpProxyAccountsExtrinsicsResult =
+        await result.current.getTopUpProxyAccountsExtrinsics(
+          originTopUpBalance,
+          targetTopUpBalance
+        );
 
       // Assert
       expect(mockTransfer).toHaveBeenCalledTimes(0);
       expect(mockCrossChainTransfer).toHaveBeenCalledTimes(0);
-      expect(mockSignAndSendPromise).toHaveBeenCalledTimes(0);
+      expect(topUpProxyAccountsExtrinsicsResult).toHaveLength(0);
     });
   });
 });

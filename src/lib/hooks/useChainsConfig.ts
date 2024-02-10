@@ -97,10 +97,10 @@ const useChainsConfig = () => {
 };
 
 const useGetCommonChainConfigs = (chain: AugmentedChain) => ({
-  chain: chain,
+  chain,
   getParachainAddress: (address?: string) =>
     getParachainAddress(address, chain),
-  decimals: useChainDecimals(chain.id),
+  decimals: useChainDecimals(chain.id) || chain.decimals,
 });
 
 const getDefaultAssetLocation = (

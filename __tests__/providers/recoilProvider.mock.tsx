@@ -1,9 +1,11 @@
 import { AugmentedChain } from '@/lib/config/chainsConfig';
 import { ChainConfiguration } from '@/lib/hooks/useChainsConfig';
+import Weight from '@/lib/models/weight.model';
 import chainsConfigState from '@/lib/state/chainsConfig.atom';
 import proxyAccountsState, {
   ProxyAccountsState,
 } from '@/lib/state/proxyAccounts.atom';
+import { ApiPromise } from '@polkadot/api';
 import { XcmV3MultiLocation } from '@polkadot/types/lookup';
 import { BN } from '@polkadot/util';
 import { FC } from 'react';
@@ -35,19 +37,17 @@ const getRecoilProvider = (
   return RecoilProvider;
 };
 
-const chainDefaultValue = {
+export const chainDefaultValue = {
   chain: {
     xcmConfiguration: {
-      xcmInstructionWeight: {
-        proofSize: new BN(1),
-        refTime: new BN(1),
-      },
+      xcmInstructionWeight: new Weight(new BN(1), new BN(1)),
+      xcmInstructionsCount: 1,
     },
   } as AugmentedChain,
   decimals: 12,
   getDefaultAsset: () => ({}) as XcmV3MultiLocation,
   getParachainAddress: () => '',
-  getApi: () => undefined,
+  getApi: () => ({}) as ApiPromise,
 };
 
 export const mockChainsConfigInitialState = {

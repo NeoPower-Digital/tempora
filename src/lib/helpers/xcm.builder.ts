@@ -4,6 +4,9 @@ import { SubmittableExtrinsic } from 'useink/core';
 import { XCM_LOCATION } from '../constants/xcm.const';
 import Weight from '../models/weight.model';
 
+/**
+ * Enumerates the types of weight limits for transactions.
+ */
 /* eslint-disable no-unused-vars */
 export enum WeightLimitType {
   Limited,

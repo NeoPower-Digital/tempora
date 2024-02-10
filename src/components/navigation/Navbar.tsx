@@ -8,7 +8,7 @@ import {
 } from '@/core/components/ui/NavigationMenu';
 import { ROUTES } from '@/lib/constants/routes.const';
 import { cn } from '@/lib/utils/tailwind';
-import { Home, Hourglass, Plus } from 'lucide-react';
+import { Coins, Home, Hourglass, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -18,6 +18,11 @@ const menuItems = [
     icon: <Plus />,
     label: 'Create Payment',
     href: ROUTES.RECURRING_PAYMENTS,
+  },
+  {
+    icon: <Coins />,
+    label: 'My Payments',
+    href: ROUTES.MY_PAYMENTS,
   },
 ] as const;
 

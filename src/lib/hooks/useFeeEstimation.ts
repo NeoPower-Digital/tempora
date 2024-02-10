@@ -1,7 +1,6 @@
 import {
   getAssetMetadata,
   getExtrinsicWeight,
-  getXcmExtrinsicTotalWeight,
   queryWeightToFee,
   xcmLocationToAssetIdNumber,
 } from '@/lib/helpers/polkadotjs.helper';
@@ -20,6 +19,14 @@ export interface FeeEstimation {
 }
 
 /**
+  Correction factor to take into account a surplus in the fee in case the 
+  weight of the extrinsic in the network increments at the moment of the tx 
+   
+  @constant
+*/
+const CORRECTION_FACTOR = 1.5;
+
+/**
  * Hook for estimating fees for origin and target chain extrinsics.
  *
  * @returns methods to obtain fees estimation in both origin and target chains
@@ -27,6 +34,25 @@ export interface FeeEstimation {
 const useFeeEstimation = () => {
   const { account } = useWallet();
   const { originConfig, targetConfig } = useRecoilValue(chainsConfigState);
+
+  /**
+   * Calculates the total weight for an XCM extrinsic based on individual weights and instruction count.
+   *
+   * @param extrinsicWeight - The weight of the base extrinsic.
+   * @param xcmInstructionWeight - The weight of a single XCM instruction.
+   * @param xcmInstructionsCount - The number of XCM instructions in the extrinsic.
+   * @returns The total weight of the XCM extrinsic.
+   */
+  const getXcmExtrinsicTotalWeight = (
+    extrinsicWeight: Weight,
+    xcmInstructionWeight: Weight,
+    xcmInstructionsCount: number
+  ): Weight => {
+    const xcmTotalInstructionsWeight =
+      xcmInstructionWeight.muln(xcmInstructionsCount);
+
+    return extrinsicWeight.add(xcmTotalInstructionsWeight);
+  };
 
   /**
    * Retrieves fee estimation details for an extrinsic in the origin parachain, including weights and fees.
@@ -50,19 +76,10 @@ const useFeeEstimation = () => {
       totalXcmWeight
     );
 
-    /**
-     * !TODO: Move this constant out of this function
-     Correction factor to take into account a surplus in the fee in case the 
-     weight of the extrinsic in the network increments at the moment of the tx 
-    
-     @constant
-     */
-    const correctionFactor = 1.5;
-
     return {
-      extrinsicWeight: extrinsicWeight.muln(correctionFactor),
-      totalXcmExtrinsicWeight: totalXcmWeight.muln(correctionFactor),
-      totalXcmExtrinsicFee: totalXcmFee.muln(correctionFactor),
+      extrinsicWeight: extrinsicWeight.muln(CORRECTION_FACTOR),
+      totalXcmExtrinsicWeight: totalXcmWeight.muln(CORRECTION_FACTOR),
+      totalXcmExtrinsicFee: totalXcmFee.muln(CORRECTION_FACTOR),
     };
   };
 
@@ -109,6 +126,7 @@ const useFeeEstimation = () => {
   };
 
   return {
+    getXcmExtrinsicTotalWeight,
     getOriginExtrinsicFeeEstimation,
     getTargetExtrinsicFeeEstimation,
   };

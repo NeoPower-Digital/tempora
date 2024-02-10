@@ -1,3 +1,4 @@
+import Environments from '@/core/models/environment';
 import { BN } from '@polkadot/util';
 import {
   Chain,
@@ -9,14 +10,6 @@ import {
 import { RelayChain } from '../constants/chains.const';
 import Weight from '../models/weight.model';
 
-const Environments = {
-  Development: 'dev',
-  Testing: 'testing',
-  Kusama: 'kusama',
-} as const;
-
-export type Environment = (typeof Environments)[keyof typeof Environments];
-
 export type XcmConfiguration = {
   xcmInstructionsCount: number;
   xcmInstructionWeight: Weight;
@@ -25,6 +18,7 @@ export type XcmConfiguration = {
 export type AugmentedChain = Chain & {
   prefix: number;
   relayChain: string;
+  decimals: number;
   xcmConfiguration: XcmConfiguration;
 };
 
@@ -63,12 +57,14 @@ const getChainConfig = (
   chain: Chain,
   prefix: number,
   relayChain: string,
+  decimals: number,
   xcmInstructionsCount: number,
   xcmInstructionWeight: Weight
 ): AugmentedChain => ({
   ...chain,
   prefix,
   relayChain,
+  decimals,
   xcmConfiguration: {
     xcmInstructionsCount,
     xcmInstructionWeight,
@@ -112,6 +108,7 @@ const originChains = {
     ShibuyaDevChain,
     5,
     RelayChain.Local,
+    18,
     6,
     originDefaultWeight
   ),
@@ -119,6 +116,7 @@ const originChains = {
     RocstarChain,
     5,
     RelayChain.Rococo,
+    18,
     6,
     originDefaultWeight
   ),
@@ -126,6 +124,7 @@ const originChains = {
     ShidenKusama,
     5,
     RelayChain.Kusama,
+    18,
     6,
     originDefaultWeight
   ),
@@ -146,6 +145,7 @@ const targetChains = {
     TuringDevChain,
     51,
     RelayChain.Local,
+    10,
     4,
     targetDefaultWeight
   ),
@@ -153,6 +153,7 @@ const targetChains = {
     RococoTuringTestnet,
     51,
     RelayChain.Rococo,
+    10,
     4,
     targetDefaultWeight
   ),
@@ -160,10 +161,10 @@ const targetChains = {
     Turing,
     51,
     RelayChain.Kusama,
+    10,
     4,
     targetDefaultWeight
   ),
 } as const;
 
 export { originChains, targetChains };
-export default Environment;

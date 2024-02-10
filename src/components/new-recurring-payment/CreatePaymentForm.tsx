@@ -17,12 +17,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/core/components/ui/Select';
+import { ChainConfiguration } from '@/lib/hooks/useChainsConfig';
+import { PaymentToken } from '@/lib/models/payment-token.model';
 import { SchedulePaymentType } from '@/lib/models/schedule-payment.model';
-import chainsConfigState from '@/lib/state/chainsConfig.atom';
 import { isValidAddress } from '@/lib/utils/address';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { fromUnixTime, getUnixTime } from 'date-fns';
+import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
-import { useRecoilValue } from 'recoil';
 import { z } from 'zod';
 import RecurringField from './RecurringField';
 
@@ -30,6 +32,7 @@ const formSchema = z.object({
   recipient: z.string().refine((value) => isValidAddress(value), {
     message: 'Recipient address should be a valid address',
   }),
+  tokenAddress: z.string(),
   amountByTx: z.coerce.number().gt(0),
   type: z.enum([SchedulePaymentType.Recurring, SchedulePaymentType.Fixed]),
   executionDates: z.array(z.object({ date: z.date() })),
@@ -39,34 +42,50 @@ const formSchema = z.object({
 export type CreatePaymentFormValues = z.infer<typeof formSchema>;
 
 interface CreatePaymentFormProps {
-  paymentToken: string;
   // eslint-disable-next-line no-unused-vars
   onSubmit: (values: CreatePaymentFormValues) => void;
   initialValue?: CreatePaymentFormValues;
+  paymentTokens?: PaymentToken[];
+  originConfig?: ChainConfiguration;
+  // eslint-disable-next-line no-unused-vars
+  getSelectedToken: (selectedAddress: string) => PaymentToken | undefined;
 }
 
+const TIME_SLOT_IN_SECONDS = 600;
+
+const calculateInitialDate = (): Date => {
+  const currentDateInSeconds = getUnixTime(new Date());
+  const initialDate =
+    currentDateInSeconds -
+    (currentDateInSeconds % TIME_SLOT_IN_SECONDS) +
+    TIME_SLOT_IN_SECONDS;
+
+  return fromUnixTime(initialDate);
+};
+
 const CreatePaymentForm: React.FC<CreatePaymentFormProps> = ({
-  paymentToken,
   onSubmit,
   initialValue,
+  paymentTokens,
+  originConfig,
+  getSelectedToken,
 }) => {
-  const { originConfig } = useRecoilValue(chainsConfigState);
+  const [tokenSelectedIsNative, setTokenSelectedIsNative] = useState<boolean>();
 
-  const initialDate = new Date();
-  initialDate.setMinutes(0, 0, 0);
-  initialDate.setHours(initialDate.getHours() + 1);
+  const initialDate = calculateInitialDate();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialValue || {
       recipient: '',
+      tokenAddress: paymentTokens?.[0]?.address ?? '0',
       amountByTx: 0,
       executionDates: [
         {
           date: initialDate,
         },
       ],
-      type: SchedulePaymentType.Recurring,
+      type: SchedulePaymentType.Fixed,
       interval: 1,
     },
   });
@@ -80,6 +99,17 @@ const CreatePaymentForm: React.FC<CreatePaymentFormProps> = ({
     control: form.control,
   });
 
+  useEffect(() => {
+    const selectedToken = getSelectedToken(form.watch('tokenAddress'));
+
+    setTokenSelectedIsNative(selectedToken?.isNative);
+
+    if (!selectedToken?.isNative) {
+      form.setValue('type', SchedulePaymentType.Fixed);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.watch('tokenAddress')]);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -88,10 +118,45 @@ const CreatePaymentForm: React.FC<CreatePaymentFormProps> = ({
           name="recipient"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Recipient {originConfig.chain.name} Address</FormLabel>
+              <FormLabel>
+                Recipient {originConfig?.chain.name} Address
+              </FormLabel>
 
               <FormControl>
                 <Input {...field} autoComplete="off" />
+              </FormControl>
+
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="tokenAddress"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Payment Token</FormLabel>
+
+              <FormControl>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+
+                  <SelectContent>
+                    {paymentTokens?.map(({ name, address }) => (
+                      <SelectItem key={name} value={address}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </FormControl>
 
               <FormMessage />
@@ -110,7 +175,9 @@ const CreatePaymentForm: React.FC<CreatePaymentFormProps> = ({
                 <div className="flex items-center gap-2">
                   <Input {...field} type="number" />
 
-                  <span className="text-muted-foreground">{paymentToken}</span>
+                  <span className="text-muted-foreground">
+                    {getSelectedToken(form.watch('tokenAddress'))?.name}
+                  </span>
                 </div>
               </FormControl>
 
@@ -130,6 +197,8 @@ const CreatePaymentForm: React.FC<CreatePaymentFormProps> = ({
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
+                  value={field.value}
+                  disabled={!tokenSelectedIsNative}
                 >
                   <FormControl>
                     <SelectTrigger>

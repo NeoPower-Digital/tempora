@@ -5,7 +5,6 @@ import Keyring from '@polkadot/keyring';
 import { TypeRegistry } from '@polkadot/types';
 import { PalletProxyProxyDefinition } from '@polkadot/types/lookup';
 import { AnyNumber } from '@polkadot/types/types';
-import { u8aToHex } from '@polkadot/util';
 import { blake2AsU8a, decodeAddress } from '@polkadot/util-crypto';
 import { ApiPromise, WalletAccount } from 'useink/core';
 
@@ -13,8 +12,7 @@ import { ApiPromise, WalletAccount } from 'useink/core';
  * Calculates proxy accounts for a given origin and target chain.
  *
  * @remarks
- * Given the context of the app, for the origin address we use derivation function V3,
- * while for target address we use derivation function V2
+ * We use XCM V3 derivation function
  *
  * @param originChain - The origin chain details obtained from `chainsConfig` atom state.
  * @param targetChain - The target chain details obtained from `chainsConfig` atom state.
@@ -26,19 +24,17 @@ import { ApiPromise, WalletAccount } from 'useink/core';
 export const calculateProxyAccounts = (
   originChain: AugmentedChain,
   targetChain: AugmentedChain,
-  account: WalletAccount,
-  targetApi: ApiPromise
+  account: WalletAccount
 ) => {
   return {
-    originProxyAddress: getDerivativeAccountV3(
+    originProxyAddress: getDerivativeAccount(
       account,
       targetChain.paraId!,
       originChain.prefix
     ),
-    targetProxyAddress: getDerivativeAccountV2(
-      originChain,
+    targetProxyAddress: getDerivativeAccount(
       account,
-      targetApi,
+      originChain.paraId!,
       targetChain.prefix
     ),
   };
@@ -94,45 +90,6 @@ export const createProxyAccount = async (
 };
 
 /**
- * Generates a derivative account address for a given destination chain using XCM V2.
- *
- * @param destinationChain - The destination chain details obtained from `chainsConfig` atom state.
- * @param account - The wallet account for which the derivative account is generated.
- * @param api - The api of the destination chain.
- * @param prefix - The prefix of the destination chain.
- * @returns The generated derivative account address.
- */
-export const getDerivativeAccountV2 = (
-  destinationChain: AugmentedChain,
-  account: WalletAccount,
-  api: ApiPromise,
-  prefix: number
-) => {
-  if (!api) return '';
-
-  const keyring = new Keyring({ type: 'sr25519' });
-
-  const location = XCM_LOCATION.ACCOUNT_X2(
-    destinationChain.paraId!,
-    decodeAddress(account!.address),
-    destinationChain.relay!.id
-  );
-
-  const multilocation = api.createType('XcmV3MultiLocation', location);
-
-  const toHash = new Uint8Array([
-    ...new Uint8Array([32]),
-    ...new TextEncoder().encode('multiloc'),
-    ...multilocation.toU8a(),
-  ]);
-
-  const encodedMultiloaction = api.registry.hash(toHash).slice(0, 32);
-  const proxyAccountId32 = u8aToHex(encodedMultiloaction);
-
-  return keyring.encodeAddress(proxyAccountId32, prefix);
-};
-
-/**
  * Generates a derivative account address for a given account and destination parachain using XCM V3.
  *
  * @param account - The wallet account for which the derivative account is generated.
@@ -140,7 +97,7 @@ export const getDerivativeAccountV2 = (
  * @param chainPrefix - The prefix of the destination chain.
  * @returns The generated derivative account address.
  */
-export const getDerivativeAccountV3 = (
+export const getDerivativeAccount = (
   account: WalletAccount,
   destinationParachainId: number,
   chainPrefix: number

@@ -95,7 +95,7 @@ const RecurringField: React.FC<RecurringFieldProps> = ({
 
                     <Input
                       type="time"
-                      step="3600"
+                      step="600"
                       className="flex-1"
                       defaultValue={format(field.value, 'HH:mm')}
                       onChange={(time) => {

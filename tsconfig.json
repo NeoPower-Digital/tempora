@@ -20,7 +20,8 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@hooks/*": ["./src/lib/hooks/*"]
+      "@hooks/*": ["./src/lib/hooks/*"],
+      "@lib/*": ["./src/lib/*"]
     }
   },
   "include": [

@@ -1,9 +1,7 @@
 import {
-  batchTransactions,
   crossChainTransfer,
   getDefaultAssetBalance,
   getTokenBalanceOfAccount,
-  signAndSendPromise,
   transfer,
   xcmLocationToAssetIdNumber,
 } from '@/lib/helpers/polkadotjs.helper';
@@ -76,8 +74,7 @@ const useProxyAccounts = () => {
     const calculatedProxyAddresses = calculateProxyAccounts(
       originConfig.chain,
       targetConfig.chain,
-      account,
-      targetConfig.getApi()!
+      account
     );
 
     setProxyAccountsState({ ...calculatedProxyAddresses });
@@ -181,8 +178,6 @@ const useProxyAccounts = () => {
         )
       );
 
-    // TODO This shows both modal to approve transactions at the same time.
-    // If we want to do one at a time we have to await every call to createProxyAccount and avoid promiseAll
     return Promise.all(promisesToExecute);
   };
 
@@ -263,7 +258,7 @@ const useProxyAccounts = () => {
    * @returns A promise that resolves to an array of extrinsics representing the topping up of proxy account balances.
    *          If no topping up is required, the promise resolves to void.
    */
-  const topUpProxyAccounts = async (
+  const getTopUpProxyAccountsExtrinsics = (
     originTopUpBalance?: BN,
     targetTopUpBalance?: BN
   ) => {
@@ -297,13 +292,7 @@ const useProxyAccounts = () => {
       );
     }
 
-    return (
-      extrinsicsToSign.length > 0 &&
-      signAndSendPromise(
-        batchTransactions(originConfig.getApi()!, extrinsicsToSign),
-        account!
-      )
-    );
+    return extrinsicsToSign;
   };
 
   return {
@@ -313,7 +302,7 @@ const useProxyAccounts = () => {
     createAccounts,
     calculateTopUpBalance,
     calculateTotalTopUpBalances,
-    topUpProxyAccounts,
+    getTopUpProxyAccountsExtrinsics,
     PROXY_ACCOUNT_MIN_TRANSFER_BALANCE,
   };
 };

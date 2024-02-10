@@ -67,7 +67,7 @@ export const signAndSendPromise = (
   extrinsic: SubmittableExtrinsic<'promise', ISubmittableResult>,
   account: WalletAccount
 ) => {
-  const RESOLVE_PROMISE_STATES = ['Finalized', 'InBlock'];
+  const RESOLVE_PROMISE_STATES = ['Finalized'];
   const REJECT_PROMISE_STATES = ['Retracted', 'Dropped', 'Invalid'];
 
   return new Promise<ContractSubmittableResult>((resolve, reject) => {
@@ -78,14 +78,24 @@ export const signAndSendPromise = (
           signer: account.wallet?.extension?.signer,
         },
         (result: ContractSubmittableResult) => {
+          const someExtrinsicFailed = result.events.some(
+            (event) => event.event.method === 'ExtrinsicFailed'
+          );
+
           if (RESOLVE_PROMISE_STATES.includes(result.status.type))
             resolve(result);
 
-          if (REJECT_PROMISE_STATES.includes(result.status.type))
+          if (
+            REJECT_PROMISE_STATES.includes(result.status.type) ||
+            someExtrinsicFailed
+          )
             reject(result);
         }
       )
-      .catch((reason) => reject(reason));
+      .catch((reason) => {
+        console.error(reason);
+        reject(reason);
+      });
   });
 };
 
@@ -100,7 +110,7 @@ export const batchTransactions = (
   api: ApiPromise,
   extrinsics: SubmittableExtrinsic<'promise', ISubmittableResult>[]
 ) => {
-  return api.tx.utility.batch(extrinsics);
+  return api.tx.utility.batchAll(extrinsics);
 };
 
 /**
@@ -164,7 +174,7 @@ export const getFormattedTokenAmount = (
  * @returns The chain token symbol.
  */
 export const getTokenSymbol = (api: ApiPromise) => {
-  return api.registry.chainTokens[0];
+  return api?.registry.chainTokens[0] || '';
 };
 
 /**
@@ -214,25 +224,6 @@ export const getExtrinsicWeight = async (
 };
 
 /**
- * Calculates the total weight for an XCM extrinsic based on individual weights and instruction count.
- *
- * @param extrinsicWeight - The weight of the base extrinsic.
- * @param xcmInstructionWeight - The weight of a single XCM instruction.
- * @param xcmInstructionsCount - The number of XCM instructions in the extrinsic.
- * @returns The total weight of the XCM extrinsic.
- */
-export const getXcmExtrinsicTotalWeight = (
-  extrinsicWeight: Weight,
-  xcmInstructionWeight: Weight,
-  xcmInstructionsCount: number
-): Weight => {
-  const xcmTotalInstructionsWeight =
-    xcmInstructionWeight.muln(xcmInstructionsCount);
-
-  return extrinsicWeight.add(xcmTotalInstructionsWeight);
-};
-
-/**
  * Retrieves the asset metadata for a specified asset ID using the assetRegistry query.
  *
  * @param api - The API Promise for interacting with the blockchain.
@@ -257,7 +248,7 @@ export const extrinsicViaProxy = (
   api: ApiPromise,
   address: string,
   extrinsic: SubmittableExtrinsic<'promise', ISubmittableResult>
-) => {
+): SubmittableExtrinsic<'promise', ISubmittableResult> => {
   return api.tx.proxy.proxy(address, 'Any', extrinsic);
 };
 

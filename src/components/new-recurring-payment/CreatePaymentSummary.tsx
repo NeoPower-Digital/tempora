@@ -6,10 +6,7 @@ import {
 } from '@/core/components/ui/Popover';
 import { Skeleton } from '@/core/components/ui/Skeleton';
 import { useToast } from '@/core/components/ui/useToast';
-import {
-  getFormattedBalance,
-  getFormattedTokenAmount,
-} from '@/lib/helpers/polkadotjs.helper';
+import { getFormattedBalance } from '@/lib/helpers/polkadotjs.helper';
 import useSchedulePayment from '@/lib/hooks/useSchedulePayment';
 import {
   OakSchedulePaymentConfiguration,
@@ -34,15 +31,19 @@ import { NewPaymentSummary } from '../../../app/new-recurring-payment/page';
 
 interface CreatePaymentSummaryProps {
   configuration: OakSchedulePaymentConfiguration;
+  selectedTokenName?: string;
   // eslint-disable-next-line no-unused-vars
   createPayment: (newPaymentSummary: NewPaymentSummary) => void;
   isCreatingPayment: boolean;
+  isToppingUpAccounts: boolean;
 }
 
 const CreatePaymentSummary: React.FC<CreatePaymentSummaryProps> = ({
   configuration: newPaymentConfiguration,
+  selectedTokenName,
   createPayment,
   isCreatingPayment,
+  isToppingUpAccounts,
 }) => {
   const { generateExtrinsicsAndEstimate } = useSchedulePayment();
   const { originConfig } = useRecoilValue(chainsConfigState);
@@ -72,7 +73,7 @@ const CreatePaymentSummary: React.FC<CreatePaymentSummaryProps> = ({
   });
 
   const { recipient, amountByTx, type, executionDates, interval } =
-    newPaymentConfiguration!;
+    newPaymentConfiguration!.values;
 
   const paymentData: Array<{
     icon: React.ReactElement;
@@ -95,7 +96,7 @@ const CreatePaymentSummary: React.FC<CreatePaymentSummaryProps> = ({
     {
       icon: <Coins />,
       label: 'Amount',
-      value: getFormattedTokenAmount(originConfig.getApi()!, amountByTx),
+      value: `${amountByTx} ${selectedTokenName}`,
     },
     {
       icon: <Repeat />,
@@ -142,9 +143,9 @@ const CreatePaymentSummary: React.FC<CreatePaymentSummaryProps> = ({
         ? skeleton
         : getFormattedBalance(
             originConfig.getApi(),
-            newPaymentSummary?.originFeeEstimation?.totalXcmExtrinsicFee
-              .muln(newPaymentSummary?.iterationsToCoverFeeOnOrigin)
-              .add(newPaymentSummary?.targetFeeEstimation?.totalXcmExtrinsicFee)
+            newPaymentSummary?.originFeeEstimation.add(
+              newPaymentSummary?.targetFeeEstimation?.totalXcmExtrinsicFee
+            )
           ),
     },
     {
@@ -195,12 +196,16 @@ const CreatePaymentSummary: React.FC<CreatePaymentSummaryProps> = ({
       <Button
         className="w-full"
         onClick={() => createPayment(newPaymentSummary!)}
-        disabled={isCreatingPayment}
+        disabled={isToppingUpAccounts || isCreatingPayment}
       >
-        {isCreatingPayment && (
+        {(isToppingUpAccounts || isCreatingPayment) && (
           <Loader2 className="mr-2 animate-spin" size={16} />
         )}
-        {isCreatingPayment ? 'Creating payment...' : 'Create Payment'}
+        {isToppingUpAccounts
+          ? 'Preparing Proxy Accounts...'
+          : isCreatingPayment
+          ? 'Creating and saving Payment...'
+          : 'Create Payment'}
       </Button>
     </div>
   );

@@ -10,6 +10,10 @@ export const createUseFeeEstimationMocks = () => {
 
   const defaultValue = new BN(1);
 
+  const mockGetXcmExtrinsicTotalWeight = vi
+    .fn()
+    .mockReturnValue(new Weight(defaultValue, defaultValue));
+
   const mockGetOriginExtrinsicFeeEstimation = vi.fn().mockReturnValue(
     new Promise((resolve) =>
       resolve({
@@ -31,6 +35,7 @@ export const createUseFeeEstimationMocks = () => {
   );
 
   mockUseFeeEstimation.mockReturnValue({
+    getXcmExtrinsicTotalWeight: mockGetXcmExtrinsicTotalWeight,
     getOriginExtrinsicFeeEstimation: mockGetOriginExtrinsicFeeEstimation,
     getTargetExtrinsicFeeEstimation: mockGetTargetExtrinsicFeeEstimation,
   });

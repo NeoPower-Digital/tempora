@@ -1,12 +1,28 @@
-# ⏳️ Tempora
+![img](./public/assets/Tempora.png)
 
 ✨ An opinionated and fully typed hook-based project to improve DX and simplify interaction with proxy accounts and XCM on [Polkadot](https://polkadot.network/).
 
 🚀 Tempora is an example of how transactions can be automated by leveraging cross-chain communication.
 
-## Scripts
+## Development environment
 
 Steps required to run the project locally:
+
+### Chain nodes
+
+1. Get the following repositories with the respective versions:
+
+- [polkadot - v0.9.43](https://github.com/paritytech/polkadot/tree/v0.9.43)
+- [OAK-blockchain - v2.1.4](https://github.com/OAK-Foundation/OAK-blockchain/tree/v2.1.4)
+- [Astar - v5.30.0](https://github.com/AstarNetwork/Astar/tree/v5.30.0)
+
+2. Execute Zombienet using the [turing-shibuya.toml](./zombienet/turing-shibuya.toml) config file from the OAK-blockchain path.
+
+3. Deploy the [Tempora contract](./contracts/tempora_contract/) on the Shibuya Dev chain.
+
+4. Deploy an OpenBrush PSP22 token ([Source code example](./contracts/psp22/openbrush-psp22.zip)) on the Shibuya Dev chain.
+
+### DApp
 
 1. Initially, it's required to install dependencies:
 
@@ -14,11 +30,21 @@ Steps required to run the project locally:
 yarn install
 ```
 
-2. Create a local environment file `.env.local` and add the following variable:
+2. Create a local environment file `.env.local` and add the following variables:
 
 ```sh
-NEXT_PUBLIC_CHAIN_ENVIRONMENT=testing
+NEXT_PUBLIC_CHAIN_ENVIRONMENT=<CHAINS_ENVIRONMENT>
+NEXT_PUBLIC_CONTRACT_ADDRESS=<TEMPORA_CONTRACT_ADDRESS>
+NEXT_PUBLIC_PSP22_TOKEN_NAME=<DEFAULT_PSP22_TOKEN_NAME>
+NEXT_PUBLIC_PSP22_TOKEN_ADDRESS=<DEFAULT_PSP22_TOKEN_CONTRACT_ADDRESS>
+NEXT_PUBLIC_PSP22_TOKEN_DECIMALS=<DEFAULT_PSP22_TOKEN_DECIMALS>
 ```
+
+> The `NEXT_PUBLIC_CHAIN_ENVIRONMENT` variable can have the following values:
+>
+> - `dev` to use a local environment (_Shibuya Dev_ and _Turing Dev_)
+> - `testing` to use Rococo (_Rocstar_ and _Turing Staging_)
+> - `kusama` to use Kusama (_Shiden_ and _Turing Network_).
 
 3. Then, you can run the following scripts:
 
@@ -54,8 +80,8 @@ NEXT_PUBLIC_CHAIN_ENVIRONMENT=testing
 - `app`: Next.js pages
 - `src`:
   - `src/components`: Business components
-  - `src/core`: Generic UI components
-  - `src/lib`: Blockchain hooks, helpers, models and states
+  - `src/core`: Generic UI components and common models
+  - `src/lib`: Business logic -> Blockchain hooks, helpers, models, states, configurations, contracts metadata, etc.
 
 ## How to use (For Devs)
 
@@ -83,7 +109,7 @@ function App() {
 
 3. Copy and Paste `src/lib` folder in your application.
 
-4. If you wish to use a different configuration for the origin/target chains you will need to replace constants in `lib/chainsConfig.ts`.
+4. If you wish to use a different configuration for the origin/target chains you will need to replace constants in `lib/config/chainsConfig.ts`.
 
    > TIP: You can find all the configurable constants by searching `// CONFIGURABLE` in the code.
 
@@ -192,12 +218,26 @@ const { originTopUpBalance, targetTopUpBalance } = calculateTotalTopUpBalances(
 );
 ```
 
-#### topUpProxyAccounts()
+#### getTopUpProxyAccountsExtrinsics()
 
 ```ts
-const { topUpProxyAccounts } = useProxyAccounts();
+const { getTopUpProxyAccountsExtrinsics, calculateTotalTopUpBalances } =
+  useProxyAccounts();
 
-await topUpProxyAccounts(originXcmExtrinsicFee, targetXcmExtrinsicFee);
+const { originTopUpBalance, targetTopUpBalance } = calculateTotalTopUpBalances(
+  originTotalFeeEstimation,
+  targetTotalFeeEstimation
+);
+
+const topUpProxyAccountExtrinsics = getTopUpProxyAccountsExtrinsics(
+  originTopUpBalance,
+  targetTopUpBalance
+);
+
+return await signAndSendPromise(
+  batchTransactions(api, [...topUpProxyAccountExtrinsics]),
+  account
+);
 ```
 
 ### [`useFeeEstimation()` 🔗️](/src/lib/hooks/useFeeEstimation.ts)
@@ -239,22 +279,41 @@ const { data: newPaymentSummary, isLoading } = useQuery({
 });
 ```
 
-#### createScheduledPayment()
+#### createAndSaveScheduledPayment()
 
 ```ts
 // Using react query
 
-const { createScheduledPayment } = useSchedulePayment();
+const { createAndSaveScheduledPayment } = useSchedulePayment();
 
 const { mutate, isPending, isSuccess } = useMutation({
-  mutationFn: (newPaymentSummary: NewPaymentSummary) =>
-    createScheduledPayment(newPaymentSummary),
-  onError: (error) => {
-    toast({
-      title: 'Error - Payment Scheduling',
-      description: error.message,
-      variant: 'destructive',
-    });
+  mutationFn: (newPaymentSummary: NewPaymentSummary) => {
+    const {
+      targetFeeEstimation,
+      taskScheduleExtrinsic,
+      getActionsOnTaskScheduled,
+    } = newPaymentSummary;
+
+    return createAndSaveScheduledPayment(
+      targetFeeEstimation,
+      taskScheduleExtrinsic,
+      getActionsOnTaskScheduled
+    );
+  },
+});
+```
+
+#### deleteSchedulePayment()
+
+```ts
+// Using react query
+
+const {
+  mutate: deleteScheduledPaymentMutation,
+  isPending: isDeletingScheduledPayment,
+} = useMutation({
+  mutationFn: async () => {
+    return await deleteScheduledPayment(temporaScheduleId, oakTaskId);
   },
 });
 ```
@@ -264,6 +323,7 @@ const { mutate, isPending, isSuccess } = useMutation({
 This file contains helper functions for interacting with the Oak.js API.
 
 - `scheduleXcmpTaskThroughProxy()`: Schedules an XCMP task through a proxy using the automationTime module in the provided API.
+- `cancelTaskWithScheduleAs()`: Cancels a task with a schedule as a given account using the automationTime module in the provided API.
 
 ## [PolkadotJS Helper Functions 🔗️](/src/lib/helpers/polkadotjs.helper.ts)
 
@@ -276,15 +336,22 @@ This file contains helper functions for interacting with the PolkadotJS API.
 - `xcmLocationToAssetIdNumber()`: Converts a XCM location to an asset ID number.
 - `getFormattedBalance()`: Formats the given balance into a human-readable string with the associated chain token.
 - `getFormattedTokenAmount()`: Formats the given amount into a human-readable string with the associated chain token.
-- `getChainTokenSymbol()`: Retrieves the chain token symbol from the provided API.
+- `getTokenSymbol()`: Retrieves the chain token symbol from the provided API.
 - `getTokenBalanceOfAccount()`: Gets the balance of a specific token for a given account.
 - `getDefaultAssetBalance()`: Queries the balance of the default asset for a given address.
 - `getExtrinsicWeight()`: Retrieves the extrinsic weight for a given SubmittableExtrinsic using the paymentInfo function.
-- `getXcmExtrinsicTotalWeight()`: Calculates the total weight for an XCM extrinsic based on individual weights and instruction count.
 - `getAssetMetadata()`: Retrieves the asset metadata for a specified asset ID using the assetRegistry query.
 - `extrinsicViaProxy()`: Creates an extrinsic to be executed via a proxy.
 - `queryWeightToFee()`: Queries the weight-to-fee conversion for a given weight using the transactionPaymentApi.
 - `sendXcm()`: Sends an XCM message to a specified destination using the polkadotXcm module.
+
+## [Smart Contracts Helper Functions 🔗️](/src/lib/helpers/polkadotjs.contracts.helper.ts)
+
+This file contains helper functions for interacting with smart contracts using the PolkadotJS API.
+
+- `getContractApi()`: Retrieves the contract API for a given contract address and metadata using the provided API.
+- `queryContract()`: Executes a given message dry-run for a given contract address using a contract API.
+- `getExecuteContractExtrinsic()`: Generates an extrinsic to execute a given message for a given contract address using a contract API.
 
 ## [Proxy Accounts Helper Functions 🔗️](/src/lib/helpers/proxyAccounts.helper.ts)
 
@@ -293,8 +360,7 @@ This file contains helper functions for managing proxy accounts.
 - `calculateProxyAccounts()`: Calculates proxy accounts for a given origin and target chain.
 - `validateProxyAccount()`: Validates a proxy account against a given address on the parachain.
 - `createProxyAccount()`: Creates a proxy account with the specified permissions for a given account using the provided API.
-- `getDerivativeAccountV2()`: Generates a derivative account address for a given destination chain using XCM V2.
-- `getDerivativeAccountV3()`: Generates a derivative account address for a given account and destination parachain using XCM V3.
+- `getDerivativeAccount()`: Generates a derivative account address for a given account and destination parachain using XCM V3.
 - `getCrossChainTransferParameters()`: Generates cross-chain transfer parameters for a given amount, decoded account address, and target parachain ID.
 
 ## [XCM Builder 🔗️](/src/lib/helpers/xcm.builder.ts)
