@@ -10,7 +10,9 @@ Steps required to run the project locally:
 
 ### Chain nodes
 
-1. Get the following repositories with the respective versions:
+1. [Install Zombienet](https://paritytech.github.io/zombienet/install.html).
+
+2. Get the following repositories with the respective versions:
 
 - [polkadot - v0.9.43](https://github.com/paritytech/polkadot/tree/v0.9.43)
 - [OAK-blockchain - v2.1.4](https://github.com/OAK-Foundation/OAK-blockchain/tree/v2.1.4)
@@ -121,9 +123,9 @@ function App() {
 
 6. Now you can start using the hooks provided in the folder `lib/hooks`
 
-## Hooks
+### Hooks
 
-### [`useWallet()` 🔗️](/src/lib/hooks/useWallet.ts)
+#### [`useWallet()` 🔗️](/src/lib/hooks/useWallet.ts)
 
 Hook to encapsulate the UI from the specific library implementation. It combines the functionality of **useink** `useWallet` and `useBalance`.
 
@@ -139,7 +141,7 @@ _Manage connection:_
 const { connect, disconnect } = useWallet();
 ```
 
-### [`useChainsConfig()` 🔗️](/src/lib/hooks/useChainsConfig.ts)
+#### [`useChainsConfig()` 🔗️](/src/lib/hooks/useChainsConfig.ts)
 
 Configures globally the origin and target chains configuration, making it available in chainsConfigState atom state. Also gets the async properties needed
 
@@ -148,11 +150,11 @@ Configures globally the origin and target chains configuration, making it availa
 const originChain = useChainsConfig();
 ```
 
-### [`useProxyAccounts()` 🔗️](/src/lib/hooks/useProxyAccounts.ts)
+#### [`useProxyAccounts()` 🔗️](/src/lib/hooks/useProxyAccounts.ts)
 
 Hook for managing proxy accounts and related operations.
 
-#### calculateProxies()
+##### calculateProxies()
 
 ```ts
 const { calculateProxies } = useProxyAccounts();
@@ -164,7 +166,7 @@ useEffect(() => {
 }, [account, apisReady]);
 ```
 
-#### proxiesExist()
+##### proxiesExist()
 
 ```ts
 const { proxiesExist } = useProxyAccounts();
@@ -175,7 +177,7 @@ const { data: proxiesExistData, isLoading: proxiesExistsIsLoading } = useQuery({
 });
 ```
 
-#### getProxiesBalances()
+##### getProxiesBalances()
 
 ```ts
 const { getProxiesBalances } = useProxyAccounts();
@@ -185,7 +187,7 @@ useEffect(() => {
 }, [proxiesExist]);
 ```
 
-#### createAccounts()
+##### createAccounts()
 
 ```ts
 // Using react-query
@@ -207,7 +209,7 @@ const { mutate: createAccountsMutate, isPending: creatingAccounts } =
   });
 ```
 
-#### calculateTotalTopUpBalances()
+##### calculateTotalTopUpBalances()
 
 ```ts
 const { calculateTotalTopUpBalances } = useProxyAccounts();
@@ -218,7 +220,7 @@ const { originTopUpBalance, targetTopUpBalance } = calculateTotalTopUpBalances(
 );
 ```
 
-#### getTopUpProxyAccountsExtrinsics()
+##### getTopUpProxyAccountsExtrinsics()
 
 ```ts
 const { getTopUpProxyAccountsExtrinsics, calculateTotalTopUpBalances } =
@@ -240,11 +242,11 @@ return await signAndSendPromise(
 );
 ```
 
-### [`useFeeEstimation()` 🔗️](/src/lib/hooks/useFeeEstimation.ts)
+#### [`useFeeEstimation()` 🔗️](/src/lib/hooks/useFeeEstimation.ts)
 
 Hook for estimating the fees of the origin and target extrinsics including XCM operations.
 
-#### getOriginExtrinsicFeeEstimation()
+##### getOriginExtrinsicFeeEstimation()
 
 ```ts
 const { getOriginExtrinsicFeeEstimation } = useFeeEstimation();
@@ -253,7 +255,7 @@ const originFeeEstimation =
   await getOriginExtrinsicFeeEstimation(originExtrinsic);
 ```
 
-#### getTargetExtrinsicFeeEstimation()
+##### getTargetExtrinsicFeeEstimation()
 
 ```ts
 const { getTargetExtrinsicFeeEstimation } = useFeeEstimation();
@@ -262,11 +264,11 @@ const targetFeeEstimation =
   await getTargetExtrinsicFeeEstimation(targetExtrinsic);
 ```
 
-### [`useSchedulePayment()` 🔗️](/src/lib/hooks/useSchedulePayment.ts)
+#### [`useSchedulePayment()` 🔗️](/src/lib/hooks/useSchedulePayment.ts)
 
 Hook to generate extrinsics, trigger fee estimation calculation and schedule a payment from the origin chain to the target chain through XCM.
 
-#### generateExtrinsicsAndEstimate()
+##### generateExtrinsicsAndEstimate()
 
 ```ts
 // Using react-query
@@ -279,7 +281,7 @@ const { data: newPaymentSummary, isLoading } = useQuery({
 });
 ```
 
-#### createAndSaveScheduledPayment()
+##### createAndSaveScheduledPayment()
 
 ```ts
 // Using react query
@@ -303,7 +305,7 @@ const { mutate, isPending, isSuccess } = useMutation({
 });
 ```
 
-#### deleteSchedulePayment()
+##### deleteSchedulePayment()
 
 ```ts
 // Using react query
@@ -318,14 +320,14 @@ const {
 });
 ```
 
-## [Oak.js Helper Functions 🔗️](/src/lib/helpers/oak.helper.ts)
+### [Oak.js Helper Functions 🔗️](/src/lib/helpers/oak.helper.ts)
 
 This file contains helper functions for interacting with the Oak.js API.
 
 - `scheduleXcmpTaskThroughProxy()`: Schedules an XCMP task through a proxy using the automationTime module in the provided API.
 - `cancelTaskWithScheduleAs()`: Cancels a task with a schedule as a given account using the automationTime module in the provided API.
 
-## [PolkadotJS Helper Functions 🔗️](/src/lib/helpers/polkadotjs.helper.ts)
+### [PolkadotJS Helper Functions 🔗️](/src/lib/helpers/polkadotjs.helper.ts)
 
 This file contains helper functions for interacting with the PolkadotJS API.
 
@@ -345,7 +347,7 @@ This file contains helper functions for interacting with the PolkadotJS API.
 - `queryWeightToFee()`: Queries the weight-to-fee conversion for a given weight using the transactionPaymentApi.
 - `sendXcm()`: Sends an XCM message to a specified destination using the polkadotXcm module.
 
-## [Smart Contracts Helper Functions 🔗️](/src/lib/helpers/polkadotjs.contracts.helper.ts)
+### [Smart Contracts Helper Functions 🔗️](/src/lib/helpers/polkadotjs.contracts.helper.ts)
 
 This file contains helper functions for interacting with smart contracts using the PolkadotJS API.
 
@@ -353,7 +355,7 @@ This file contains helper functions for interacting with smart contracts using t
 - `queryContract()`: Executes a given message dry-run for a given contract address using a contract API.
 - `getExecuteContractExtrinsic()`: Generates an extrinsic to execute a given message for a given contract address using a contract API.
 
-## [Proxy Accounts Helper Functions 🔗️](/src/lib/helpers/proxyAccounts.helper.ts)
+### [Proxy Accounts Helper Functions 🔗️](/src/lib/helpers/proxyAccounts.helper.ts)
 
 This file contains helper functions for managing proxy accounts.
 
@@ -363,7 +365,7 @@ This file contains helper functions for managing proxy accounts.
 - `getDerivativeAccount()`: Generates a derivative account address for a given account and destination parachain using XCM V3.
 - `getCrossChainTransferParameters()`: Generates cross-chain transfer parameters for a given amount, decoded account address, and target parachain ID.
 
-## [XCM Builder 🔗️](/src/lib/helpers/xcm.builder.ts)
+### [XCM Builder 🔗️](/src/lib/helpers/xcm.builder.ts)
 
 This file contains the functions of the helper class for building a XCM message.
 
@@ -374,13 +376,23 @@ This file contains the functions of the helper class for building a XCM message.
 - `addRefundSurplus()`: Adds a RefundSurplus instruction to the XCM message.
 - `addDepositAsset()`: Adds a DepositAsset instruction to the XCM message.
 
-## [Unit tests 🔗️](/__tests__)
+## Unit tests
+
+### [UI 🔗️](/__tests__)
 
 Our unit tests cover the main hooks functionality.
 
-Run: `yarn test`
+Run on the root path: `yarn test`
 
-![](/public/assets/unit-tests.png)
+![](/public/assets/ui-unit-tests.png)
+
+### [Smart Contract 🔗️](/contracts/tempora_contract/lib.rs)
+
+Our tests cover the main messages functionality.
+
+Run on the `/contracts/tempora_contract` folder: `cargo test`
+
+![](/public/assets/smart-contract-tests.png)
 
 ## Deploy example on Vercel
 
