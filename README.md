@@ -4,7 +4,7 @@
 
 🚀 Tempora is an example of how transactions can be automated by leveraging cross-chain communication.
 
-## Development environment
+## Run on local environment
 
 Steps required to run the project locally:
 
@@ -12,17 +12,32 @@ Steps required to run the project locally:
 
 1. [Install Zombienet](https://paritytech.github.io/zombienet/install.html).
 
-2. Get the following repositories with the respective versions:
+> We recommend downloading the corresponding (`linux` or `mac`) executable file from the [Zombienet Github releases page](https://github.com/paritytech/zombienet/releases). 
+Move the downloaded file to the [`zombienet`](./zombienet) folder, give it execute permissions, rename it to "zombienet" and that's it! ✅ 
+
+2. Get the following chain runtimes with specific version:
 
 - [polkadot - v0.9.43](https://github.com/paritytech/polkadot/tree/v0.9.43)
+  - Install it globally with the following command: `cargo install --git https://github.com/paritytech/polkadot --tag v0.9.43 polkadot --locked`
+
 - [OAK-blockchain - v2.1.4](https://github.com/OAK-Foundation/OAK-blockchain/tree/v2.1.4)
+  - Clone the repository in the folder `zombienet/OAK-blockchain`.
+  - Checkout the specific version: `git checkout tags/v2.1.4`
+  - Build it using [this guide](https://github.com/OAK-Foundation/OAK-blockchain/tree/v2.1.4?tab=readme-ov-file#build-from-source).
+
 - [Astar - v5.30.0](https://github.com/AstarNetwork/Astar/tree/v5.30.0)
+  - Clone repository in the folder `zombienet/Astar`.
+  - Checkout the specific version: `git checkout tags/v5.30.0`
+  - Build it using [this guide](https://github.com/AstarNetwork/Astar/tree/v5.30.0?tab=readme-ov-file#building-from-source).
 
-2. Execute Zombienet using the [turing-shibuya.toml](./zombienet/turing-shibuya.toml) config file from the OAK-blockchain path.
+3. Execute Zombienet using the [turing-shibuya.toml](./zombienet/turing-shibuya.toml) configuration file on the [`zombienet`](./zombienet) path: `zombienet spawn turing-shibuya.toml`.
 
-3. Deploy the [Tempora contract](./contracts/tempora_contract/) on the Shibuya Dev chain.
+4. Deploy and instantiate the [Tempora contract](./contracts/tempora_contract/) on the Shibuya Dev chain and save the contract address for the `.env.local` file. 
 
-4. Deploy an OpenBrush PSP22 token ([Source code example](./contracts/psp22/openbrush-psp22.zip)) on the Shibuya Dev chain.
+5. Deploy and instantiate an OpenBrush PSP22 token ([Source code example](./contracts/psp22/openbrush-psp22.zip)) on the Shibuya Dev chain and save the contract address, token name and token decimals values for the `.env.local` file.
+
+6. Whitelist the PSP22 token in the Tempora contract using the `add_token_to_whitelist` message. It receives a token contract address as a parameter. 
+> The message should be called with the Tempora Admin account (the account that initialized the smart contract).
 
 ### DApp
 
@@ -37,9 +52,9 @@ yarn install
 ```sh
 NEXT_PUBLIC_CHAIN_ENVIRONMENT=<CHAINS_ENVIRONMENT>
 NEXT_PUBLIC_CONTRACT_ADDRESS=<TEMPORA_CONTRACT_ADDRESS>
-NEXT_PUBLIC_PSP22_TOKEN_NAME=<DEFAULT_PSP22_TOKEN_NAME>
-NEXT_PUBLIC_PSP22_TOKEN_ADDRESS=<DEFAULT_PSP22_TOKEN_CONTRACT_ADDRESS>
-NEXT_PUBLIC_PSP22_TOKEN_DECIMALS=<DEFAULT_PSP22_TOKEN_DECIMALS>
+NEXT_PUBLIC_PSP22_TOKEN_NAME=<PSP22_TOKEN_NAME>
+NEXT_PUBLIC_PSP22_TOKEN_ADDRESS=<PSP22_TOKEN_CONTRACT_ADDRESS>
+NEXT_PUBLIC_PSP22_TOKEN_DECIMALS=<PSP22_TOKEN_DECIMALS>
 ```
 
 > The `NEXT_PUBLIC_CHAIN_ENVIRONMENT` variable can have the following values:

@@ -3,7 +3,7 @@ provider = "native"
 timeout = 1000
 
 [relaychain]
-default_command = "../polkadot/target/release/polkadot"
+default_command = "polkadot"
 chain = "rococo-local"
 
     [[relaychain.nodes]]
@@ -23,7 +23,7 @@ chain = "turing-dev"
 
     [parachains.collator]
     name = "turing-col-1"
-    command = "./target/release/oak-collator"
+    command = "./OAK-blockchain/target/release/oak-collator"
     ws_port = 9946
     rpc_port = 8855
 
@@ -34,7 +34,7 @@ chain = "shibuya-dev"
 
     [parachains.collator]
     name = "shibuya-col-1"
-    command = "../Astar/target/release/astar-collator"
+    command = "./Astar/target/release/astar-collator"
     args = ["--enable-evm-rpc"] # Optional
     ws_port = 9948
     rpc_port = 8867
