@@ -17,7 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/core/components/ui/Select';
+import { getFormattedBalance } from '@/lib/helpers/polkadotjs.helper';
 import { ChainConfiguration } from '@/lib/hooks/useChainsConfig';
+import useWallet from '@/lib/hooks/useWallet';
 import { PaymentToken } from '@/lib/models/payment-token.model';
 import { SchedulePaymentType } from '@/lib/models/schedule-payment.model';
 import { isValidAddress } from '@/lib/utils/address';
@@ -25,6 +27,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { fromUnixTime, getUnixTime } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
+import { BN, pickDecoded } from 'useink/utils';
 import { z } from 'zod';
 import RecurringField from './RecurringField';
 
@@ -70,12 +73,22 @@ const CreatePaymentForm: React.FC<CreatePaymentFormProps> = ({
   originConfig,
   getSelectedToken,
 }) => {
+  const { account, useBalance, usePsp22Balance } = useWallet();
+  const originNativeBalance = useBalance(account, originConfig!.chain.id);
+  const psp22BalanceCall = usePsp22Balance();
   const [tokenSelectedIsNative, setTokenSelectedIsNative] = useState<boolean>();
 
   const initialDate = calculateInitialDate();
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const extendedFormSchema = formSchema
+    .extend({})
+    .refine((data) => data.amountByTx <= getNumericCurrentBalance(), {
+      message: "Amount shouldn't be greater than the current balance",
+      path: ['amountByTx'],
+    });
+
+  const form = useForm<z.infer<typeof extendedFormSchema>>({
+    resolver: zodResolver(extendedFormSchema),
     defaultValues: initialValue || {
       recipient: '',
       tokenAddress: paymentTokens?.[0]?.address ?? '0',
@@ -99,13 +112,53 @@ const CreatePaymentForm: React.FC<CreatePaymentFormProps> = ({
     control: form.control,
   });
 
+  const getCurrentPsp22Balance = () => {
+    const balance: string | undefined = pickDecoded(psp22BalanceCall.result);
+
+    if (!balance) return;
+
+    const selectedToken = getSelectedToken(form.watch('tokenAddress'))!;
+
+    return getFormattedBalance(
+      originConfig!.getApi(),
+      new BN(balance.replace(/,/g, '')),
+      {
+        significantFigures: 2,
+        symbol: selectedToken.name,
+        decimals: selectedToken.decimals,
+      }
+    );
+  };
+
+  const getNumericCurrentBalance = (): number => {
+    const currentBalance = getCurrentBalance();
+
+    if (!currentBalance) return 0;
+
+    return Number(currentBalance.split(' ')[0]);
+  };
+
+  const getCurrentBalance = (): string | undefined => {
+    if (tokenSelectedIsNative) {
+      return getFormattedBalance(
+        originConfig!.getApi(),
+        originNativeBalance?.freeBalance
+      );
+    }
+
+    return getCurrentPsp22Balance();
+  };
+
   useEffect(() => {
+    if (!account) return;
+
     const selectedToken = getSelectedToken(form.watch('tokenAddress'));
 
-    setTokenSelectedIsNative(selectedToken?.isNative);
+    setTokenSelectedIsNative(selectedToken?.isNative ?? true);
 
     if (!selectedToken?.isNative) {
       form.setValue('type', SchedulePaymentType.Fixed);
+      psp22BalanceCall.send([account.address]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.watch('tokenAddress')]);
@@ -180,6 +233,9 @@ const CreatePaymentForm: React.FC<CreatePaymentFormProps> = ({
                   </span>
                 </div>
               </FormControl>
+              <FormLabel className="text-muted-foreground">
+                Current balance: {getCurrentBalance()}
+              </FormLabel>
 
               <FormMessage />
             </FormItem>

@@ -70,8 +70,9 @@ const SuccessSection: React.FC = () => {
 export default function NewRecurringPayment() {
   const { topUpAccounts, createAndSaveScheduledPayment } = useSchedulePayment();
   const { toast } = useToast();
-
   const { account } = useWallet();
+  const { proxiesExist } = useProxyAccounts();
+
   const { originProxyAddress, targetProxyAddress } =
     useRecoilValue(proxyAccountsState);
   const proxiesCalculated = useRecoilValue(proxiesAddressCalculated);
@@ -83,7 +84,6 @@ export default function NewRecurringPayment() {
     useState<OakSchedulePaymentConfiguration>();
   const [paymentTokens, setPaymentTokens] = useState<PaymentToken[]>();
 
-  const { proxiesExist } = useProxyAccounts();
   const { data: proxiesExistData, isLoading: proxiesExistsIsLoading } =
     useQuery({
       queryKey: ['proxiesExist', originProxyAddress, targetProxyAddress],

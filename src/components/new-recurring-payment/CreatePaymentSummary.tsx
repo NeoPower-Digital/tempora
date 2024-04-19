@@ -46,7 +46,7 @@ const CreatePaymentSummary: React.FC<CreatePaymentSummaryProps> = ({
   isToppingUpAccounts,
 }) => {
   const { generateExtrinsicsAndEstimate } = useSchedulePayment();
-  const { originConfig } = useRecoilValue(chainsConfigState);
+  const { originConfig, targetConfig } = useRecoilValue(chainsConfigState);
   const { toast } = useToast();
 
   const topUpMessage = [
@@ -170,12 +170,20 @@ const CreatePaymentSummary: React.FC<CreatePaymentSummaryProps> = ({
       ),
       value: isLoading
         ? skeleton
-        : getFormattedBalance(
+        : `${originConfig.chain.name}: ${getFormattedBalance(
             originConfig.getApi(),
-            (newPaymentSummary?.originTopUpBalance || new BN(0)).add(
-              newPaymentSummary?.targetTopUpBalance || new BN(0)
-            )
-          ),
+            newPaymentSummary?.originTopUpBalance || new BN(0)
+          )}`,
+    },
+    {
+      icon: <div />,
+      label: '',
+      value: isLoading
+        ? skeleton
+        : `${targetConfig.chain.name}: ${getFormattedBalance(
+            originConfig.getApi(),
+            newPaymentSummary?.targetTopUpBalance || new BN(0)
+          )}`,
     }
   );
 
@@ -185,7 +193,8 @@ const CreatePaymentSummary: React.FC<CreatePaymentSummaryProps> = ({
         {paymentData.map(({ icon, label, value }, index) => (
           <div key={index} className="flex justify-between w-full items-start">
             <div className="flex items-center gap-4">
-              {icon} {label}:
+              {icon} {label}
+              {label ? ':' : ''}
             </div>
 
             <div className="text-muted-foreground">{value}</div>

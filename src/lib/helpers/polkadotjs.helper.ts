@@ -135,20 +135,23 @@ export const xcmLocationToAssetIdNumber = async (
  *
  * @param api - The API Promise for interacting with the blockchain.
  * @param balance - The balance to be formatted.
+ * @param options - Additional options for formatting the balance.
  * @returns The formatted balance as a string or '-' if the balance or API is undefined.
  */
 export const getFormattedBalance = (
   api: ApiPromise | undefined,
-  balance?: Balance | BN | undefined
+  balance?: Balance | BN | undefined,
+  options?: { significantFigures?: number; symbol?: string; decimals?: number }
 ) => {
   if (!balance || !api) return '-';
-
-  const significantFigures = balance.isZero() ? 0 : 4;
 
   return (
     planckToDecimalFormatted(balance.toString(), {
       api,
-      significantFigures,
+      significantFigures:
+        options?.significantFigures || balance.isZero() ? 0 : 4,
+      symbol: options?.symbol || getTokenSymbol(api),
+      decimals: options?.decimals,
     }) || '-'
   );
 };
